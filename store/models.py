@@ -2,10 +2,13 @@ from django.db import models
 from decimal import Decimal
 from django.utils import timezone
 
+# Create your models here.
+
 
 class Category(models.Model):
-    name = models.CharField("nombre", max_length=100, unique= True)
-    slug = models.SlugField("slug", max_length=120, unique= True)
+    """representa una categoria del catalogo, ej: portatiles, monitores, teclados"""
+    name = models.CharField("nombre", max_length=100, unique=True)
+    slug = models.SlugField("slug", max_length=120, unique=True)
 
     class Meta:
         verbose_name = "Categoría"
@@ -17,17 +20,18 @@ class Category(models.Model):
 
     @property
     def product_count(self) -> int:
+        """cuenta cuantos productos tiene una categoria en especifico"""
         return self.products.count()  # type: ignore
-    
 
 
 class ProductQuerySet(models.QuerySet):
     def active(self):
-        return self.filter(is_active=True)
-    
+        return self.filter(is_activate=True)
+
     def by_category(self, category_slug: str):
-        return self.active().filter(category_slug=category_slug)
-    
+        return self.active().filter(category__slug=category_slug)
+
+
 class ProductManager(models.Manager):
     def get_queryset(self):
         return ProductQuerySet(self.model, using=self._db)
@@ -36,26 +40,26 @@ class ProductManager(models.Manager):
         return self.get_queryset().active()
 
     def by_category(self, category_slug: str):
-        return self.get_queryset().by_category(category_slug)    
-    
+        return self.get_queryset().by_category(category_slug)
 
-    
+
 class Product(models.Model):
-    name = models.CharField("nombre", max_length= 200 )    
+    name = models.CharField("nombre", max_length=200)
     slug = models.SlugField("slug", max_length=220, unique=True)
     category = models.ForeignKey(
         Category,
-        related_name= "products",
+        related_name="products",
         on_delete=models.PROTECT,
         verbose_name="categoría",
-         
     )
 
-    descripcion = models.TextField("descripción", blank= True)
+    descripcion = models.TextField("descripción", blank=True)
     price = models.DecimalField("precio", max_digits=10, decimal_places=2)
     is_activate = models.BooleanField("activo", default=True)
     created_at = models.DateTimeField("creado el", auto_now_add=True)
     updated_at = models.DateTimeField("actualizado el", auto_now=True)
+
+    objects = ProductManager()
 
     class Meta:
         verbose_name = "producto"
@@ -70,13 +74,13 @@ class Product(models.Model):
     def __str__(self) -> str:
         return str(self.name)
 
-    def price_with_tax(self, tax_rate: Decimal = Decimal ("0.19")) -> Decimal:
+    def price_with_tax(self, tax_rate: Decimal = Decimal("0.19")) -> Decimal:
         return self.price * (Decimal("1") + tax_rate)
-    
+
     @classmethod
-    def active (cls):
+    def active(cls):
         return cls.objects.filter(is_activate=True)
-    
+
 
 class Customer(models.Model):
     first_name = models.CharField("nombres", max_length=100)
@@ -96,13 +100,13 @@ class Customer(models.Model):
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
-    
+
     def total_orders(self) -> int:
         return self.orders.count()  # type: ignore
-    
+
     def last_order(self):
         return self.orders.order_by("-created_at").first()  # type: ignore
-    
+
 
 class Order(models.Model):
     STATUS_PENDING = "pending"
@@ -120,7 +124,7 @@ class Order(models.Model):
         related_name="orders",
         on_delete=models.CASCADE,
         verbose_name="cliente",
-    )    
+    )
 
     status = models.CharField(
         "estado",
@@ -160,27 +164,27 @@ class Order(models.Model):
         self.updated_at = timezone.now()
         self.save(update_fields=["status", "updated_at"])
 
+
 class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
         related_name="items",
         on_delete=models.CASCADE,
         verbose_name="orden",
-    )  
+    )
 
     product = models.ForeignKey(
         Product,
         related_name="order_items",
         on_delete=models.PROTECT,
         verbose_name="producto",
-    )   
+    )
 
-    quantity = models.PositiveIntegerField("cantidad", default= 1)
+    quantity = models.PositiveIntegerField("cantidad", default=1)
     unit_price = models.DecimalField(
-        "precio unitario", 
-        max_digits=10, 
+        "precio unitario",
+        max_digits=10,
         decimal_places=2,
-        
     )
 
     class Meta:
@@ -192,5 +196,5 @@ class OrderItem(models.Model):
 
     @property
     def subtotal(self) -> Decimal:
-        return self.unit_price * self.quantity    
+        return self.unit_price * self.quantity
 

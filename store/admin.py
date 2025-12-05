@@ -1,14 +1,15 @@
 from django.contrib import admin
-
 from .models import Category, Product, Customer, Order, OrderItem
 
-
 # Register your models here.
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "product_count")
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
+
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -22,7 +23,7 @@ class ProductAdmin(admin.ModelAdmin):
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ("full_name", "email", "phone", "created_at", "total_orders")
     search_fields = ("first_name", "last_name", "email")
-    readonly_fields = ("created_at",)    
+    readonly_fields = ("created_at",)
 
 
 class OrderItemInline(admin.TabularInline):
@@ -32,7 +33,6 @@ class OrderItemInline(admin.TabularInline):
     """
     model = OrderItem
     extra = 1
-
 
 
 @admin.register(Order)
